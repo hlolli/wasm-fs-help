@@ -1,0 +1,11 @@
+debug
+out
+target
+node_modules
+package-lock.json
+*#
+*~
+*.wav
+yarn.lock
+result
+*.log
