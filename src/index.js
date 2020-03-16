@@ -31,17 +31,18 @@ const bindings = {
 };
 
 const preopens = {
-  "/sandbox": "."
+  ".": "/sandbox"
 };
-
-const wasi = new WASI({
-  preopens,
-  env,
-  bindings
-});
 
 const load = async () => {
   const { default: response } = await import("../lib/tests.wasm");
+  await wasmFs.volume.mkdirpBase("/sandbox");
+  const wasi = new WASI({
+    preopens,
+    env,
+    bindings
+  });
+
   const wasmBytes = new Uint8Array(response).buffer;
   const module = await WebAssembly.compile(wasmBytes);
   const options = wasi.getImports(module);
@@ -57,7 +58,6 @@ const load = async () => {
 
 const main = async () => {
   const wasm = await load();
-  await wasmFs.volume.mkdirpBase("/sandbox");
   wasm.exports.test1();
 };
 
