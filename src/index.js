@@ -1,6 +1,8 @@
-import { WASI } from "@wasmer/wasi/lib/index.esm.js";
+import { WASI } from "@wasmer/wasi";
 import { WasmFs } from "@wasmer/wasmfs";
 import browserBindings from "@wasmer/wasi/lib/bindings/browser";
+import { lowerI64Imports } from "@wasmer/wasm-transformer";
+import * as path from "path";
 
 const decoder = new TextDecoder("utf8");
 export const uint2Str = uint => decoder.decode(uint);
@@ -22,29 +24,30 @@ const defaultMessageCallback = data => {
 };
 
 export const wasmFs = new WasmFs();
-
 const env = {};
 
 const bindings = {
   ...browserBindings,
-  fs: wasmFs.fs
+  fs: wasmFs.fs,
+  path
 };
 
 const preopens = {
-  ".": "/sandbox"
+  "/": "/"
 };
+
+const wasi = new WASI({
+  preopens,
+  env,
+  bindings
+});
 
 const load = async () => {
   const { default: response } = await import("../lib/tests.wasm");
-  await wasmFs.volume.mkdirpBase("/sandbox");
-  const wasi = new WASI({
-    preopens,
-    env,
-    bindings
-  });
-
-  const wasmBytes = new Uint8Array(response).buffer;
-  const module = await WebAssembly.compile(wasmBytes);
+  await wasmFs.volume.mkdirSync("/sandbox");
+  const wasmBytes = new Uint8Array(response);
+  const transformedBinary = await lowerI64Imports(wasmBytes);
+  const module = await WebAssembly.compile(transformedBinary);
   const options = wasi.getImports(module);
   options["env"] = env;
   const instance = await WebAssembly.instantiate(module, options);
@@ -58,7 +61,11 @@ const load = async () => {
 
 const main = async () => {
   const wasm = await load();
-  wasm.exports.test1();
+  wasm.exports.add();
+  console.log(
+    "File cotents after the wasm module wrote into the sandbox: ",
+    wasmFs.fs.readdirSync("/sandbox/")
+  );
 };
 
 main();

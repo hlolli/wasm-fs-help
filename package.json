@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@wasmer/wasi": "^0.10.1",
-    "@wasmer/wasmfs": "^0.10.1"
+    "@wasmer/wasm-transformer": "^0.10.1",
+    "@wasmer/wasmfs": "^0.10.1",
+    "path-browserify": "^1.0.1"
   }
 }
